@@ -4,9 +4,17 @@ import string
 
 class Trader:
     
+    def get_midprice(self, state, instrument):
+      return list(state.order_depths[instrument].buy_orders.keys())[0] + list(state.order_depths[instrument].sell_orders.keys())[0]
+    
     def run(self, state: TradingState):
         print("traderData: " + state.traderData)
         print("Observations: " + str(state.observations))
+
+        limits = {"CHOCOLATE": 250,
+              "STRAWBERRIES": 350,
+              "ROSES": 60,
+              "GIFT_BASKET":60}
 
 				# Orders to be placed on exchange matching engine
         result = {}
@@ -63,6 +71,53 @@ class Trader:
               sell_order = Order('STARFRUIT', midprice+2, sell_size)
               orders.append(buy_order)
               orders.append(sell_order)
+            
+        
+            
+            chocolate_midprice = self.get_midprice(state, 'CHOCOLATE')
+            strawberries_midprice = self.get_midprice(state, 'STRAWBERRIES')
+            roses_midprice = self.get_midprice(state, 'ROSES')
+            gb_midprice = self.get_midprice(state, 'GIFT_BASKET')
+            print(chocolate_midprice, strawberries_midprice, roses_midprice, gb_midprice)
+            
+            gb_implied = chocolate_midprice*4 + strawberries_midprice*6 + roses_midprice
+            spread = gb_midprice - gb_implied
+            
+            
+            
+            
+            if spread >= 450:
+              chocolate_order = Order('CHOCOLATE', chocolate_midprice-5, -4)
+              strawberry_order = Order('STRAWBERRIES', strawberries_midprice-5, -6)
+              roses_order = Order('ROSES', roses_midprice-5, -1)    
+              gb_order = Order('GIFT_BASKET', gb_midprice + 5, 1)
+          
+              if state.position.get('CHOCOLATE', 0) > -limits['CHOCOLATE'] + 4:
+                orders.append(chocolate_order)
+              if state.position.get('STRAWBERRIES', 0) > -limits['STRAWBERRIES'] + 6:
+                orders.append(strawberry_order)
+              if state.position.get('ROSES', 0) > -limits['ROSES'] + 1:
+                orders.append(roses_order)
+             
+              if state.position.get('GIFT_BASKET', 0) > limits['GIFT_BASKET']-1:
+                orders.append(gb_order)
+            
+            if spread < 300:
+              chocolate_order = Order('CHOCOLATE', chocolate_midprice+5, 4)
+              strawberry_order = Order('STRAWBERRIES', strawberries_midprice+5, 6)
+              roses_order = Order('ROSES', roses_midprice+5, 1)    
+              gb_order = Order('GIFT_BASKET', gb_midprice - 5, -1)
+              
+              if state.position.get('CHOCOLATE', 0) > limits['CHOCOLATE'] - 4:
+                orders.append(chocolate_order)
+              if state.position.get('STRAWBERRIES', 0) > limits['STRAWBERRIES'] - 6:
+                orders.append(strawberry_order)
+              if state.position.get('ROSES', 0) > limits['ROSES'] - 1:
+                orders.append(roses_order)
+             
+              if state.position.get('GIFT_BASKET', 0) > -limits['GIFT_BASKET']+1:
+                orders.append(gb_order)
+              
               
               
             result[product] = orders
